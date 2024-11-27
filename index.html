@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Optimized Music Chorus Player</title>
+    <style>
+        /* Reset Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Body Styles */
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f7f7f7;
+            color: #333;
+        }
+
+        /* Header */
+        header {
+            background-color: #6200ea;
+            padding: 20px;
+            text-align: center;
+            color: #fff;
+        }
+
+        header h1 {
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        header p {
+            font-size: 1em;
+        }
+
+        /* Search Bar */
+        #searchBar {
+            margin: 20px auto;
+            display: flex;
+            position: relative; /* Make searchBar a positioned element */
+            width: 90%;
+            max-width: 600px;
+        }
+
+        #searchInput {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            border-radius: 50px 0 0 50px;
+            outline: none;
+            transition: border-color 0.3s;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        #searchInput:focus {
+            border-color: #6200ea;
+        }
+
+        #searchButton {
+            padding: 15px 20px;
+            font-size: 16px;
+            background-color: #6200ea;
+            color: #fff;
+            border: 1px solid #6200ea;
+            border-left: none;
+            border-radius: 0 50px 50px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            white-space: nowrap;
+        }
+
+        #searchButton:hover {
+            background-color: #5300d6;
+        }
+
+        /* Suggestions Dropdown */
+        #suggestions {
+            position: absolute;
+            top: 100%; /* Position it directly below the searchBar */
+            left: 25px; /* Override default left alignment */
+            right: auto;
+            width: 480px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+
+            z-index: 1000;
+        }
+
+        .suggestion-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* Results Grid */
+        #results {
+            margin: 20px auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            width: 90%;
+            max-width: 1200px;
+            justify-content: center;
+        }
+
+        .song {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .song:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .song img {
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        .song-title {
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 1em;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .song-artist {
+            color: #666;
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Selected Album Display */
+        #selectedAlbum {
+            margin: 20px auto;
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #selectedAlbum.active {
+            display: block;
+            opacity: 1;
+        }
+
+        #selectedAlbum img {
+            width: 100%;
+            max-width: 300px;
+            border-radius: 10px;
+        }
+
+        #selectedAlbum .album-title {
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 1.2em;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #selectedAlbum .album-artist {
+            color: #666;
+            font-size: 1em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Audio Player */
+        #audioPlayer {
+            display: none;
+            margin: 20px auto;
+            width: 90%;
+            max-width: 600px;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #audioPlayer.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            margin: 50px auto;
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #6200ea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            #searchBar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            #searchInput, #searchButton {
+                border-radius: 50px;
+                width: 100%;
+            }
+
+            #searchButton {
+                margin-top: 10px;
+                border-left: 1px solid #6200ea;
+            }
+
+            #suggestions {
+                top: 100%; /* Adjust for vertical layout */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Music Chorus Player</h1>
+        <p>Search and play song previews</p>
+    </header>
+
+    <div id="searchBar">
+        <input type="text" id="searchInput" placeholder="Search for a song..." autocomplete="off" />
+        <button id="searchButton">Search</button>
+        <div id="suggestions"></div>
+    </div>
+
+    <!-- Selected Album Display -->
+    <div id="selectedAlbum"></div>
+
+    <div id="results"></div>
+
+    <audio id="audioPlayer" controls></audio>
+
+    <script>
+        let debounceTimer;
+        let selectedSuggestion = null;
+
+        document.getElementById('searchButton').addEventListener('click', searchSongs);
+        document.getElementById('searchInput').addEventListener('input', function(event) {
+            clearTimeout(debounceTimer);
+            selectedSuggestion = null; // Reset selectedSuggestion when input changes
+            debounceTimer = setTimeout(fetchSuggestions, 300);
+        });
+
+        document.getElementById('searchInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (selectedSuggestion) {
+                    displayResults([selectedSuggestion]);
+                } else {
+                    searchSongs();
+                }
+                clearSuggestions();
+            }
+        });
+
+        function fetchSuggestions() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                clearSuggestions();
+                return;
+            }
+
+            const searchUrl = 'https://itunes.apple.com/search?term=' + encodeURIComponent(query) + '&entity=song&limit=10';
+
+            fetch(searchUrl)
+                .then(response => response.json())
+                .then(data => showSuggestions(data.results))
+                .catch(error => console.error('Error fetching suggestions:', error));
+        }
+
+        function showSuggestions(songs) {
+            const suggestionsDiv = document.getElementById('suggestions');
+            suggestionsDiv.innerHTML = '';
+
+            songs.forEach(song => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.className = 'suggestion-item';
+                suggestionItem.textContent = song.trackName + ' by ' + song.artistName;
+                suggestionItem.addEventListener('click', function() {
+                    document.getElementById('searchInput').value = song.trackName + ' by ' + song.artistName;
+                    selectedSuggestion = song;
+                    displayResults([song]);
+                    clearSuggestions();
+                });
+                suggestionsDiv.appendChild(suggestionItem);
+            });
+        }
+
+        function clearSuggestions() {
+            const suggestionsDiv = document.getElementById('suggestions');
+            suggestionsDiv.innerHTML = '';
+            selectedSuggestion = null;
+        }
+
+        function searchSongs() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                alert('Please enter a song name.');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            clearSuggestions();
+
+            const spinner = document.createElement('div');
+            spinner.className = 'spinner';
+            resultsDiv.appendChild(spinner);
+
+            const searchUrl = 'https://itunes.apple.com/search?term=' + encodeURIComponent(query) + '&entity=song&limit=10';
+
+            fetch(searchUrl)
+                .then(response => response.json())
+                .then(data => {
+                    resultsDiv.removeChild(spinner);
+                    displayResults(data.results);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    resultsDiv.innerHTML = '<p>Error fetching data. Please try again later.</p>';
+                });
+        }
+
+        function displayResults(songs) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = ''; // Clear previous results
+
+            const selectedAlbumDiv = document.getElementById('selectedAlbum');
+            selectedAlbumDiv.innerHTML = ''; // Clear previous content
+            selectedAlbumDiv.classList.remove('active');
+
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.classList.remove('active');
+
+            if (songs.length === 0) {
+                resultsDiv.innerHTML = '<p>No songs found. Please try a different search.</p>';
+                return;
+            }
+
+            if (songs.length === 1) {
+                // Center the single song album
+                playSong(songs[0], true);
+            } else {
+                // Display multiple results
+                songs.forEach(song => {
+                    const songDiv = document.createElement('div');
+                    songDiv.className = 'song';
+
+                    const img = document.createElement('img');
+                    img.src = song.artworkUrl100;
+                    img.alt = 'Album Art';
+
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'song-title';
+                    titleDiv.textContent = song.trackName;
+
+                    const artistDiv = document.createElement('div');
+                    artistDiv.className = 'song-artist';
+                    artistDiv.textContent = song.artistName;
+
+                    songDiv.appendChild(img);
+                    songDiv.appendChild(titleDiv);
+                    songDiv.appendChild(artistDiv);
+
+                    songDiv.addEventListener('click', function() {
+                        playSong(song, true);
+                    });
+
+                    resultsDiv.appendChild(songDiv);
+                });
+            }
+        }
+
+        function playSong(song, fromDisplayResults = false) {
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.src = song.previewUrl;
+            audioPlayer.classList.add('active');
+            audioPlayer.play();
+
+            // Display the selected album art
+            const selectedAlbumDiv = document.getElementById('selectedAlbum');
+            selectedAlbumDiv.innerHTML = ''; // Clear previous content
+            selectedAlbumDiv.classList.add('active');
+
+            const albumImg = document.createElement('img');
+            albumImg.src = song.artworkUrl100.replace('100x100', '600x600'); // Get higher resolution image
+            albumImg.alt = 'Album Art';
+
+            const albumTitle = document.createElement('div');
+            albumTitle.className = 'album-title';
+            albumTitle.textContent = song.trackName; // Display the song name
+
+            const albumArtist = document.createElement('div');
+            albumArtist.className = 'album-artist';
+            albumArtist.textContent = song.artistName;
+
+            selectedAlbumDiv.appendChild(albumImg);
+            selectedAlbumDiv.appendChild(albumTitle);
+            selectedAlbumDiv.appendChild(albumArtist);
+
+            // If coming from displayResults with a single song, hide the results grid
+            if (fromDisplayResults) {
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '';
+            }
+
+            // Smooth scroll to the selected album
+            selectedAlbumDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!document.getElementById('searchBar').contains(event.target)) {
+                clearSuggestions();
+            }
+        });
+    </script>
+</body>
+</html>
